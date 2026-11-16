@@ -1,269 +1,579 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Phishing Analyst Console</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: three-pane analyst console — queue | analysis | assistant; stacks on narrow screens */
-:root {
-  --bg: #eef1f5; --panel: #ffffff; --sunk: #f5f7fa; --line: #d8dee7;
-  --fg: #172033; --muted: #5b6678; --accent: #2448b8; --accent-soft: #e4eafb;
-  --warn: #a86400; --warn-soft: #fbf0dc;
-  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f141d; --panel: #161d29; --sunk: #1b2331; --line: #2a3446;
-  --fg: #e4e9f2; --muted: #93a0b5; --accent: #7d9cff; --accent-soft: #1f2a48;
-  --warn: #f0b35a; --warn-soft: #362a14; color-scheme: dark; } }
-:root[data-theme="dark"] {
-  --bg: #0f141d; --panel: #161d29; --sunk: #1b2331; --line: #2a3446;
-  --fg: #e4e9f2; --muted: #93a0b5; --accent: #7d9cff; --accent-soft: #1f2a48;
-  --warn: #f0b35a; --warn-soft: #362a14; color-scheme: dark; }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
-button, input, textarea { font: inherit; color: inherit; }
-button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:root{color-scheme:light dark;
+  --bg:light-dark(#ffffff,#0b1024);--soft:light-dark(#f3f5fb,#121a36);--line:light-dark(#dfe3ef,#26305a);
+  --ink:light-dark(#0e1530,#e9edfb);--muted:light-dark(#5a6383,#9aa5c9);
+  --blue:light-dark(#1d43d8,#7a94ff);--on-blue:light-dark(#ffffff,#0b1024);--blue-s:light-dark(#e6ebfd,#1b2656);--side:light-dark(#1d43d8,#111a45);
+  --red:light-dark(#d72638,#ff6b78);--red-s:light-dark(#fde8ea,#3a1520);
+  --green:light-dark(#13804f,#55d69a);--green-s:light-dark(#e3f5ec,#10301f);
+  --amber:light-dark(#b86e00,#f2b04a);--amber-s:light-dark(#fdf1dc,#3a2a10);
+  --display:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--display);overflow-x:clip}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2,h3,h4{margin:0;text-wrap:balance;letter-spacing:-.02em;line-height:1.1}
+.airmail{height:8px;background:repeating-linear-gradient(-45deg,var(--red) 0 14px,var(--bg) 14px 22px,var(--blue) 22px 36px,var(--bg) 36px 44px)}
+.btn{min-height:40px;border:1.5px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 15px;font-weight:600;font-size:14px}
+.btn:hover{border-color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.q{color:var(--red)}.btn.q:hover{border-color:var(--red)}
+.btn.s{color:var(--green)}.btn.s:hover{border-color:var(--green)}
+.btn.e{color:var(--amber)}.btn.e:hover{border-color:var(--amber)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.input{width:100%;min-height:44px;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);font-size:16px}
+.input:focus{border-color:var(--blue);outline:none}
+textarea.input{font-family:var(--mono);font-size:13.5px;resize:vertical}
+.stamp{display:inline-block;font-weight:700;font-size:12.5px;padding:2px 8px;border:2px solid currentColor;border-radius:5px;transform:rotate(-2deg);white-space:nowrap}
+.stamp.inbox{color:var(--blue)}.stamp.quarantine{color:var(--red)}.stamp.safe{color:var(--green)}.stamp.escalated{color:var(--amber)}
 
-.app { display: flex; flex-direction: column; min-height: 100%; padding-block: 0 16px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 14px; }
-header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 14px; }
-.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.01em; margin: 0; }
-.proto { font-family: var(--f-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--warn); background: var(--warn-soft); padding: 2px 8px; border-radius: 3px; }
-.modelchip { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
-.modelchip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+/* login */
+.login{min-height:100%;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.login .art{background:var(--side);display:flex;flex-direction:column;justify-content:center;gap:28px;padding:48px max(5vw,24px);color:#fff}
+.login .art svg{width:100%;max-width:520px;height:auto;align-self:center}
+.login .art p{margin:0;font-size:17px;max-width:34ch;opacity:.92}
+.login .art h1{font-size:clamp(32px,4vw,48px);font-weight:800;margin-bottom:12px}
+.login .form{display:grid;place-items:center;padding:40px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.login form{width:100%;max-width:380px;display:flex;flex-direction:column;gap:16px}
+.login form h2{font-size:28px;font-weight:800}
+.login form > p{margin:-8px 0 0;color:var(--muted)}
+.err{color:var(--red);font-size:14px;margin:0}
+.demo{font-size:13px;color:var(--muted);background:var(--soft);border-radius:8px;padding:10px 12px}
+.demo code{font-family:var(--mono);color:var(--ink)}
+@media(max-width:760px){.login{grid-template-columns:minmax(0,1fr)}.login .art{padding:28px 20px;gap:16px}.login .art svg{max-width:340px}}
 
-.grid { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; gap: 14px; flex: 1; min-height: 0; }
-@media (max-width: 1100px) { .grid { grid-template-columns: 260px minmax(0, 1fr); } .chat { grid-column: 1 / -1; min-height: 420px; } }
-@media (max-width: 720px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+/* shell */
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100%}
+.side{background:var(--side);color:#fff;display:flex;flex-direction:column;gap:2px;padding:20px 14px;padding-left:max(14px,env(safe-area-inset-left,0px))}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px 20px;font-weight:800;font-size:17px;letter-spacing:-.01em}
+.brand svg{flex:none}
+.group{font-size:13px;padding:18px 10px 6px;opacity:.7}
+.nav{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;color:rgba(255,255,255,.88)}
+.nav:hover{background:rgba(255,255,255,.12);color:#fff}
+.nav.active{background:#fff;color:#1d43d8}
+.nav:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.nav .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+.nav .count{margin-left:auto;font-size:12.5px;font-variant-numeric:tabular-nums}
+.side .user{margin-top:auto;padding:14px 10px 0;border-top:1px solid rgba(255,255,255,.2);display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.side .user button{all:unset;cursor:pointer;text-decoration:underline}
+.side .user button:focus-visible{outline:2px solid #fff}
+.work{display:flex;flex-direction:column;min-width:0}
+main{padding-block:28px 48px;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px;max-width:1240px;width:100%}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.head h2{font-size:clamp(30px,3.4vw,40px);font-weight:800}
+.head p{margin:6px 0 0;color:var(--muted);max-width:62ch;font-size:16px}
+@media(max-width:820px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .brand{width:100%;padding:4px 4px 8px}.group{display:none}
+  .nav{min-height:38px;padding:6px 10px}
+  .side .user{margin:0 0 0 auto;border:0;padding:0 4px}.side .user span{display:none}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
 
-.pane { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
-.pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-.pane-head h2 { font-family: var(--f-display); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; color: var(--muted); }
-.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 6px 12px; font-weight: 500; font-size: 13px; }
-.btn:hover { border-color: var(--accent); }
-.btn.primary { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+.panel{background:var(--bg);border:1.5px solid var(--line);border-radius:12px;min-width:0;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px;border-bottom:1.5px solid var(--line)}
+.panel-head h3{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.note{font-size:13px;color:var(--muted)}
+.ph{border:2px dashed var(--line);border-radius:10px;background:var(--soft);padding:14px 16px;color:var(--muted)}
+.ph b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
 
-/* Queue */
-.queue { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
-.queue li button { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
-.queue li button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.queue li button:hover { background: var(--sunk); }
-.queue li.active button { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-.q-row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
-.q-from { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.q-time { font-family: var(--f-mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
-.q-subj { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* dashboard */
+.sorter{padding:22px}
+.bar{display:flex;height:64px;border-radius:10px;overflow:hidden;background:var(--soft)}
+.bar span{display:block;height:100%;transition:width .4s}
+.bar .inbox{background:var(--blue)}.bar .quarantine{background:var(--red)}.bar .safe{background:var(--green)}.bar .escalated{background:var(--amber)}
+.figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+@media(max-width:700px){.figs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fig-btn{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 12px;border-radius:10px;display:flex;flex-direction:column;gap:2px}
+.fig-btn:hover{background:var(--soft)}
+.fig-btn:focus-visible{outline:2px solid var(--blue)}
+.fig-btn b{font-size:clamp(30px,3.6vw,42px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.fig-btn span{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.fig-btn i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.dash{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px}
+@media(max-width:960px){.dash{grid-template-columns:minmax(0,1fr)}}
+.ph-chart{height:200px;display:flex;align-items:end;gap:8px;padding:18px}
+.ph-chart i{flex:1;border-radius:4px 4px 0 0;background:repeating-linear-gradient(-45deg,var(--line) 0 4px,transparent 4px 8px)}
+.activity{list-style:none;margin:0;padding:0}
+.activity li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line);font-size:14px}
+.activity li:last-child{border-bottom:0}
+.activity .what{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.activity time{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.empty{padding:22px 18px;color:var(--muted)}
 
-.submit { padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--sunk); display: flex; flex-direction: column; gap: 8px; }
-.submit label { font-size: 12px; color: var(--muted); font-weight: 500; }
-.submit textarea { width: 100%; min-height: 140px; resize: vertical; font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--panel); }
-.submit .row { display: flex; gap: 8px; justify-content: flex-end; }
+/* list + detail */
+.split{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:1060px){.split{grid-template-columns:minmax(0,1fr)}}
+.list{list-style:none;margin:0;padding:0;max-height:72vh;overflow-y:auto}
+.list li button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:10px minmax(0,1fr);gap:4px 12px;padding:13px 18px;cursor:pointer;border-bottom:1px solid var(--line)}
+.list li:last-child button{border-bottom:0}
+.list li button:hover{background:var(--soft)}
+.list li button:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.list li.active button{background:var(--blue-s)}
+.list .pip{width:9px;height:9px;border-radius:50%;background:var(--blue);margin-top:6px;grid-row:span 2}
+.list li.active .pip{box-shadow:0 0 0 3px var(--bg)}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.from{font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.time{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.subj{font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;grid-column:2}
+.submit-box{padding:20px;display:flex;flex-direction:column;gap:14px}
+.actions-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 
-/* Analysis */
-.analysis { overflow-y: auto; }
-.email-head { padding: 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
-.email-head h3 { font-family: var(--f-display); font-size: 1.25rem; font-weight: 700; margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
-.email-head .meta { font-family: var(--f-mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
-.slots { padding: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 520px) { .slots { grid-template-columns: minmax(0, 1fr); } }
-.slot { border: 1.5px dashed var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; background: var(--sunk); }
-.slot.wide { grid-column: 1 / -1; min-height: 120px; }
-.slot .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
-.slot .ph { color: var(--muted); font-style: italic; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 18px 18px; }
-details { padding: 0 18px 18px; }
-details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
-pre.raw { font-family: var(--f-mono); font-size: 12px; background: var(--sunk); border: 1px solid var(--line); border-radius: 6px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 10px 0 0; }
+.env-head{padding:20px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start;border-bottom:1.5px solid var(--line)}
+.env-head h3{font-size:clamp(22px,2.4vw,28px);font-weight:800;overflow-wrap:anywhere}
+.env-head .meta{font-family:var(--mono);font-size:13px;color:var(--muted);overflow-wrap:anywhere;margin-top:6px}
+.env-head .by{font-size:13px;color:var(--muted);margin-top:8px}
+.verdict{padding:22px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:22px;align-items:center;border-bottom:1.5px solid var(--line)}
+@media(max-width:560px){.verdict{grid-template-columns:minmax(0,1fr);justify-items:start}}
+.postmark{width:150px;height:150px;color:var(--muted);transform:rotate(-9deg)}
+.postmark.phishing{color:var(--red)}.postmark.legit{color:var(--green)}
+.postmark text{font-family:var(--display);font-weight:800;fill:currentColor}
+.conf{display:flex;flex-direction:column;gap:14px}
+.meter{height:10px;border-radius:5px;margin-top:8px;background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 13px)}
+.meter i{display:block;height:100%;border-radius:5px;background:var(--blue)}
+.block{padding:22px;border-bottom:1.5px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.block h4{font-size:16px;font-weight:700}
+.features{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.features li{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:10px;padding:11px 14px}
+.features li span:first-child{font-weight:600}
+.features .pending{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;padding:18px 22px;border-bottom:1.5px solid var(--line)}
+.actions .ask{margin-left:auto}
+.note-box{padding:0 22px 18px;display:flex;flex-direction:column;gap:10px}
+details.raw{padding:16px 22px}
+details.raw summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details.raw pre{font-family:var(--mono);font-size:13px;background:var(--soft);border-radius:8px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}
+.fold-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1.5px solid var(--line);font-weight:700}
 
-/* Chat */
-.chat .log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 240px; }
-.msg { max-width: 92%; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg.user { align-self: flex-end; background: var(--accent); color: var(--panel); border-bottom-right-radius: 2px; }
-.msg.bot { align-self: flex-start; background: var(--sunk); border: 1.5px dashed var(--line); color: var(--muted); font-style: italic; border-bottom-left-radius: 2px; }
-.msg.sys { align-self: center; font-family: var(--f-mono); font-size: 11px; color: var(--muted); padding: 2px; text-align: center; }
-.composer { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line); }
-.composer input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--panel); }
+/* assistant */
+.chat{display:flex;flex-direction:column;height:min(72vh,700px);min-height:440px}
+.ctx{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1.5px solid var(--line)}
+.ctx label{font-weight:600;color:var(--muted);font-size:14px}
+.ctx select{min-height:40px;border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg);max-width:100%}
+.log{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;background:var(--soft)}
+.msg{max-width:min(80%,62ch);padding:10px 14px;border-radius:12px;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--blue);color:var(--on-blue);border-bottom-right-radius:3px}
+.msg.bot{align-self:flex-start;background:var(--bg);border:2px dashed var(--line);color:var(--muted);border-bottom-left-radius:3px}
+.msg.sys{align-self:center;font-size:13px;color:var(--muted)}
+.composer{display:flex;gap:8px;padding:14px 18px;border-top:1.5px solid var(--line)}
+.composer input{flex:1}
 
-.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; z-index: 20; }
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:10px;font-size:14px;z-index:20;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px)}
+.toast button{all:unset;cursor:pointer;text-decoration:underline;font-weight:700}
+@media(prefers-reduced-motion:reduce){.bar span{transition:none}}
 </style>
+</head>
+<body>
 
-<div class="app">
-  <header class="top">
-    <div class="brand">
+<!-- ================= LOGIN ================= -->
+<div class="login" id="loginView">
+  <div class="art">
+    <svg viewBox="0 0 420 290" role="img" aria-label="An airmail envelope with a fish hook caught under its flap">
+      <defs>
+        <pattern id="stripe" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="28" height="28" fill="#fff"/><rect width="9" height="28" fill="#d72638"/><rect x="14" width="9" height="28" fill="#1d43d8"/>
+        </pattern>
+      </defs>
+      <rect x="22" y="40" width="380" height="236" rx="10" fill="#0b1a5c" opacity=".35"/>
+      <rect x="10" y="26" width="380" height="236" rx="10" fill="url(#stripe)"/>
+      <rect x="24" y="40" width="352" height="208" rx="4" fill="#fff"/>
+      <path d="M24 44 L200 160 L376 44" fill="none" stroke="#dfe3ef" stroke-width="3"/>
+      <rect x="300" y="54" width="60" height="70" rx="2" fill="#fff" stroke="#1d43d8" stroke-width="2" stroke-dasharray="4 3"/>
+      <rect x="307" y="61" width="46" height="56" fill="#e6ebfd"/>
+      <path d="M330 72 l14 5 v10 c0 8-6 14-14 16 c-8-2-14-8-14-16 v-10z" fill="#1d43d8"/>
+      <g fill="none" stroke="#d72638" stroke-width="2.5" opacity=".85">
+        <circle cx="282" cy="96" r="30"/><circle cx="282" cy="96" r="23"/>
+        <path d="M318 84 q10-6 20 0 t20 0 M318 96 q10-6 20 0 t20 0 M318 108 q10-6 20 0 t20 0"/>
+      </g>
+      <text x="282" y="100" text-anchor="middle" font-family="Schibsted Grotesk, sans-serif" font-weight="800" font-size="7.5" fill="#d72638">CHECKED</text>
+      <g fill="#c9d0e6"><rect x="56" y="180" width="150" height="9" rx="4"/><rect x="56" y="198" width="190" height="9" rx="4"/><rect x="56" y="216" width="120" height="9" rx="4"/></g>
+      <path d="M200 160 V214 q0 26 -22 26 q-20 0 -20 -20" fill="none" stroke="#0e1530" stroke-width="5" stroke-linecap="round"/>
+      <path d="M158 220 l-8 -12 l14 4z" fill="#0e1530"/>
+      <path d="M200 0 V160" stroke="#0e1530" stroke-width="2" stroke-dasharray="2 5"/>
+    </svg>
+    <div>
       <h1>Phishing Analyst Console</h1>
-      <span class="proto">Prototype · placeholder AI</span>
+      <p>Submit a suspicious email, read the model's explanation, and sort it into the right folder.</p>
     </div>
-    <span class="modelchip"><span class="dot"></span>Fine-tuned Qwen</span>
-  </header>
+  </div>
+  <div class="form">
+    <form id="loginForm" novalidate>
+      <h2>Sign in</h2>
+      <p>Administrators only.</p>
+      <div class="field"><label for="user">Username</label><input class="input" id="user" autocomplete="username"></div>
+      <div class="field"><label for="pass">Password</label><input class="input" id="pass" type="password" autocomplete="current-password"></div>
+      <p class="err" id="loginErr" hidden>Wrong username or password. Check both and try again.</p>
+      <button class="btn primary" type="submit">Sign in</button>
+      <div class="demo">Prototype login: <code>admin</code> / <code>admin123</code>. Real sign-in will be checked by the backend.</div>
+    </form>
+  </div>
+</div>
 
-  <div class="grid">
-    <section class="pane" aria-label="Email queue">
-      <div class="pane-head">
-        <h2>Inbox</h2>
-        <button class="btn" id="toggleSubmit" aria-expanded="false">Submit email</button>
-      </div>
-      <form class="submit" id="submitForm" hidden>
-        <label for="rawInput">Paste the raw email (headers and body)</label>
-        <textarea id="rawInput" spellcheck="false" placeholder="From: ...&#10;Subject: ...&#10;&#10;Body text"></textarea>
-        <div class="row">
-          <button type="button" class="btn" id="cancelSubmit">Cancel</button>
-          <button type="submit" class="btn primary">Analyze</button>
-        </div>
-      </form>
-      <ul class="queue" id="queue"></ul>
-    </section>
-
-    <section class="pane analysis" id="analysis" aria-label="Analysis"></section>
-
-    <section class="pane chat" aria-label="Analyst assistant">
-      <div class="pane-head">
-        <h2>Assistant</h2>
-        <button class="btn" id="clearChat">Clear</button>
-      </div>
-      <div class="log" id="log"></div>
-      <form class="composer" id="composer">
-        <input id="chatInput" type="text" placeholder="Ask about this email…" autocomplete="off" aria-label="Message the assistant">
-        <button class="btn primary" type="submit">Send</button>
-      </form>
-    </section>
+<!-- ================= APP ================= -->
+<div class="shell" id="appView" hidden>
+  <nav class="side" aria-label="Main">
+    <div class="brand"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Analyst Console</div>
+    <button class="nav" data-view="dashboard">Dashboard</button>
+    <button class="nav" data-view="analyze">Analyze <span class="count" data-count="inbox"></span></button>
+    <button class="nav" data-view="assistant">Assistant</button>
+    <div class="group">Sorted mail</div>
+    <button class="nav" data-view="quarantine"><span class="dot" style="background:#d72638"></span>Quarantined <span class="count" data-count="quarantine"></span></button>
+    <button class="nav" data-view="safe"><span class="dot" style="background:#13804f"></span>Marked safe <span class="count" data-count="safe"></span></button>
+    <button class="nav" data-view="escalated"><span class="dot" style="background:#e39a1f"></span>Escalated <span class="count" data-count="escalated"></span></button>
+    <div class="user"><span id="whoami">admin</span><button id="logout">Sign out</button></div>
+  </nav>
+  <div class="work">
+    <div class="airmail" aria-hidden="true"></div>
+    <main id="main"></main>
   </div>
 </div>
 
 <script>
-/* Example emails for the demo inbox */
-const SAMPLES = [
-`From: "Accounts Payable" <billing@micros0ft-invoices.com>
-Subject: URGENT: Overdue invoice #INV-88213
-Date: Thu, 5 Nov 2026 09:14:02 -0500
-
-Your account is past due. Pay here: http://185.22.41.9/pay/invoice?id=88213`,
-`From: "IT Service Desk" <helpdesk@company-support.net>
-Subject: Password expires today - verify your account
-Date: Thu, 5 Nov 2026 08:02:44 -0500
-
-Verify your credentials: https://login.company-support.net/verify`,
-`From: "Benefits Team" <benefits@company.com>
-Subject: Open enrollment documents for 2027
-Date: Wed, 4 Nov 2026 16:40:10 -0500
-
-Open enrollment starts Monday. The benefits guide is attached.`,
-`From: "GitHub" <noreply@github.com>
-Subject: [company/infra] Pull request #412 merged
-Date: Wed, 4 Nov 2026 14:12:55 -0500
-
-Merged #412 into main.`
-];
-
+{
 /* =====================================================================
-   PLACEHOLDER AI — one fine-tuned Qwen model does both jobs.
-   Replace these two functions with calls to your Qwen server.
+   PLACEHOLDER AI — one fine-tuned Qwen model.
+   Swap these stubs for calls to your Qwen server. While they return
+   null, the page shows placeholders in their place.
    ===================================================================== */
 const QWEN = { endpoint: '/v1/chat/completions', model: 'qwen-phish' }; // TODO
 
-// TODO: send email.raw to Qwen, return { verdict, confidence, explanation }
+/** TODO: send email.raw to Qwen. Expected shape:
+ *  { prediction: 'Phishing'|'Legitimate',
+ *    confidence: 0..1 | null,          // null if the model doesn't provide one
+ *    explanation: string,
+ *    features: { links, urgency, sender, attachments, credentials }  // each: string finding or null
+ *  } */
 async function detectThreat(email) {
-  return { verdict: null, confidence: null, explanation: null };
+  return { prediction: null, confidence: null, explanation: null, features: {} };
 }
 
-// TODO: send the question + email + detection result to Qwen, return its reply
+/** TODO: send question + email + detection result to Qwen, return its reply text. */
 async function askAssistant(question, email) {
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(r => setTimeout(r, 350));
   return 'Qwen response will appear here.';
 }
 
-/* ---------- helpers ---------- */
+/** TODO: replace with a POST to your backend auth route. */
+async function login(user, pass) {
+  return user === 'admin' && pass === 'admin123';
+}
+
+/* ---------- Example emails ---------- */
+const SAMPLES = [
+`From: "GitHub" <noreply@github.com>
+Subject: [company/infra] Pull request #412 merged
+Date: Wed, 11 Nov 2026 14:12:55 -0500
+
+Merged #412 into main.`,
+`From: "Benefits Team" <benefits@company.com>
+Subject: Open enrollment documents for 2027
+Date: Wed, 11 Nov 2026 16:40:10 -0500
+
+Open enrollment starts Monday. The benefits guide is attached.`,
+`From: "IT Service Desk" <helpdesk@company-support.net>
+Subject: Password expires today - verify your account
+Date: Thu, 12 Nov 2026 08:02:44 -0500
+
+Verify your credentials: https://login.company-support.net/verify`,
+`From: "Accounts Payable" <billing@micros0ft-invoices.com>
+Subject: URGENT: Overdue invoice #INV-88213
+Date: Thu, 12 Nov 2026 09:14:02 -0500
+
+Your account is past due. Pay here: http://185.22.41.9/pay/invoice?id=88213`
+];
+
+const FOLDERS = {
+  inbox:      { label: 'Inbox',       verb: 'Restored to inbox', c: 'var(--blue)' },
+  quarantine: { label: 'Quarantined', verb: 'Quarantined', c: 'var(--red)', blurb: 'Held away from recipients. Nothing here reaches a mailbox until an admin releases it.' },
+  safe:       { label: 'Marked safe', verb: 'Marked safe', c: 'var(--green)', blurb: 'Reviewed and released to the recipient.' },
+  escalated:  { label: 'Escalated',   verb: 'Escalated',   c: 'var(--amber)', blurb: "Sent to a senior analyst for review, with the escalating admin's note." }
+};
+const FEATURES = [['links', 'Unusual links'], ['urgency', 'Urgent language'], ['sender', 'Sender mismatch'], ['attachments', 'Suspicious attachments'], ['credentials', 'Credential request']];
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const nameOf = v => { const m = (v || '').match(/^"?([^"<]+)"?\s*</); return m ? m[1].trim() : v; };
+const fmt = d => { const t = new Date(d); return isNaN(t) ? '' : t.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
 function parseEmail(raw) {
   const [head] = raw.replace(/\r/g, '').split(/\n\s*\n/);
   const h = {};
   head.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) h[l.slice(0, i).trim().toLowerCase()] = l.slice(i + 1).trim(); });
   return { raw, from: h.from || '(unknown sender)', subject: h.subject || '(no subject)', date: h.date || new Date().toString() };
 }
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const nameOf = v => { const m = (v || '').match(/^"?([^"<]+)"?\s*</); return m ? m[1].trim() : v; };
-const timeOf = d => { const t = new Date(d); return isNaN(t) ? '' : t.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
-const $ = id => document.getElementById(id);
-const ph = (v, text) => v == null ? `<span class="ph">${text}</span>` : esc(v);
+const ph = (label, text) => `<div class="ph"><b>${label}</b>${text}</div>`;
+function postmark(pred) {
+  const cls = !pred ? '' : /phish/i.test(pred) ? 'phishing' : 'legit';
+  const top = pred ? esc(pred) : 'Awaiting';
+  const bot = pred ? 'Qwen verdict' : 'model';
+  return `<svg class="postmark ${cls}" viewBox="0 0 150 150" role="img" aria-label="Verdict: ${pred ? esc(pred) : 'waiting for the model'}">
+    <circle cx="75" cy="75" r="68" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="${pred ? '0' : '6 5'}"/>
+    <circle cx="75" cy="75" r="56" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <line x1="22" y1="75" x2="128" y2="75" stroke="currentColor" stroke-width="1.5"/>
+    <text x="75" y="64" text-anchor="middle" font-size="${pred && pred.length > 9 ? 15 : 19}">${top}</text>
+    <text x="75" y="96" text-anchor="middle" font-size="13" font-weight="600">${bot}</text></svg>`;
+}
 
-/* ---------- state ---------- */
-const state = { emails: [], selected: null, chats: {} };
+/* ---------- State ---------- */
+const state = { user: null, view: 'dashboard', emails: [], sel: {}, chats: {}, chatCtx: '', activity: [], showSubmit: false };
+const inFolder = f => state.emails.filter(e => e.folder === f);
 
-async function addEmail(raw, select) {
+async function addEmail(raw) {
   const e = parseEmail(raw);
   e.id = 'e' + Math.random().toString(36).slice(2, 8);
+  e.folder = 'inbox';
+  e.history = [{ folder: 'inbox', at: new Date(), by: state.user || 'system' }];
   e.result = await detectThreat(e);
   state.emails.unshift(e);
-  if (select) state.selected = e.id;
+  return e;
+}
+
+function move(id, folder, note) {
+  const e = state.emails.find(x => x.id === id);
+  if (!e || e.folder === folder) return;
+  e.folder = folder; e.note = note || '';
+  e.history.push({ folder, at: new Date(), by: state.user, note });
+  state.activity.unshift({ folder, subject: e.subject, at: new Date() });
+  if (state.sel.analyze === id) state.sel.analyze = inFolder('inbox')[0]?.id;
+  state.sel[folder] = id;
   render();
+  toast(`${FOLDERS[folder].verb}: ${e.subject}`, folder === 'inbox' ? 'analyze' : folder);
 }
 
+/* ---------- Routing ---------- */
+const VIEWS = ['dashboard', 'analyze', 'assistant', 'quarantine', 'safe', 'escalated'];
+function go(view) { if (location.hash.slice(1) !== view) location.hash = view; else { state.view = view; render(); } }
+window.addEventListener('hashchange', () => { const v = location.hash.slice(1); state.view = VIEWS.includes(v) ? v : 'dashboard'; render(); });
+
+/* ---------- Views ---------- */
 function render() {
-  $('queue').innerHTML = state.emails.map(e => `
-    <li class="${e.id === state.selected ? 'active' : ''}"><button data-id="${e.id}">
-      <span class="q-row"><span class="q-from">${esc(nameOf(e.from))}</span><span class="q-time">${esc(timeOf(e.date))}</span></span>
-      <span class="q-subj">${esc(e.subject)}</span>
-    </button></li>`).join('');
-
-  const e = state.emails.find(x => x.id === state.selected);
-  $('analysis').innerHTML = !e ? '<div class="email-head"><span class="meta">Select an email.</span></div>' : `
-    <div class="email-head">
-      <h3>${esc(e.subject)}</h3>
-      <span class="meta">${esc(e.from)} · ${esc(timeOf(e.date))}</span>
-    </div>
-    <div class="slots">
-      <div class="slot"><span class="label">Verdict</span>${ph(e.result.verdict, 'Model verdict')}</div>
-      <div class="slot"><span class="label">Confidence</span>${ph(e.result.confidence, 'Confidence score')}</div>
-      <div class="slot wide"><span class="label">Explanation</span>${ph(e.result.explanation, 'Qwen explanation of the result will appear here')}</div>
-    </div>
-    <div class="actions">
-      <button class="btn primary" data-act="Quarantined">Quarantine</button>
-      <button class="btn" data-act="Marked safe">Mark safe</button>
-      <button class="btn" data-act="Escalated">Escalate</button>
-    </div>
-    <details><summary>View raw email</summary><pre class="raw">${esc(e.raw)}</pre></details>`;
-
-  const msgs = e ? (state.chats[e.id] ||= []) : [];
-  $('log').innerHTML = `<div class="msg sys">${e ? 'About: ' + esc(e.subject) : 'No email selected'}</div>` +
-    msgs.map(m => `<div class="msg ${m.role}">${esc(m.text)}</div>`).join('');
-  $('log').scrollTop = $('log').scrollHeight;
+  $('loginView').hidden = !!state.user;
+  $('appView').hidden = !state.user;
+  if (!state.user) return;
+  $('whoami').textContent = state.user;
+  document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n.dataset.view === state.view));
+  document.querySelectorAll('[data-count]').forEach(c => { c.textContent = inFolder(c.dataset.count).length || ''; });
+  $('main').innerHTML = ({ dashboard, analyze, assistant })[state.view]?.() ?? folderView(state.view);
+  const log = document.querySelector('.log'); if (log) log.scrollTop = log.scrollHeight;
 }
 
-async function send(text) {
-  text = text.trim(); if (!text) return;
-  const e = state.emails.find(x => x.id === state.selected);
-  if (!e) return toast('Select an email first');
-  const msgs = state.chats[e.id];
-  msgs.push({ role: 'user', text }); render();
-  msgs.push({ role: 'bot', text: await askAssistant(text, e) }); render();
+function dashboard() {
+  const total = state.emails.length || 1;
+  const keys = ['inbox', 'quarantine', 'safe', 'escalated'];
+  const label = { inbox: 'Awaiting review', quarantine: 'Quarantined', safe: 'Marked safe', escalated: 'Escalated' };
+  return `
+    <div class="head"><div><h2>${inFolder('inbox').length} email${inFolder('inbox').length === 1 ? '' : 's'} waiting for review</h2><p>Where every submitted email stands right now.</p></div>
+      <button class="btn primary" data-go="analyze" data-open-submit>Submit email</button></div>
+    <section class="panel sorter" aria-label="Emails by folder">
+      <div class="bar">${keys.map(k => `<span class="${k}" style="width:${inFolder(k).length / total * 100}%" title="${label[k]}: ${inFolder(k).length}"></span>`).join('')}</div>
+      <div class="figs">${keys.map(k => `<button class="fig-btn" data-go="${k === 'inbox' ? 'analyze' : k}"><b>${inFolder(k).length}</b><span><i style="background:${FOLDERS[k].c}"></i>${label[k]}</span></button>`).join('')}</div>
+    </section>
+    <div class="dash">
+      <section class="panel"><div class="panel-head"><h3>Detection summary</h3><span class="note">Needs the model</span></div>
+        <div class="ph-chart" aria-hidden="true">${[40, 65, 50, 80, 55, 70, 90].map(h => `<i style="height:${h}%"></i>`).join('')}</div>
+        <div style="padding:0 18px 18px">${ph('Placeholder', 'Phishing vs. legitimate predictions per day will appear here once Qwen is connected.')}</div></section>
+      <section class="panel"><div class="panel-head"><h3>Recent activity</h3></div>
+        ${state.activity.length ? `<ul class="activity">${state.activity.slice(0, 8).map(a => `
+          <li><span class="stamp ${a.folder}">${FOLDERS[a.folder].label}</span><span class="what">${esc(a.subject)}</span><time>${fmt(a.at)}</time></li>`).join('')}</ul>`
+          : '<div class="empty">No actions yet. Quarantine, mark safe or escalate an email from Analyze and it will show up here.</div>'}
+      </section>
+    </div>`;
 }
 
-function toast(t) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 2000); }
+function emailList(list, key) {
+  if (!list.length) return '';
+  if (!list.some(e => e.id === state.sel[key])) state.sel[key] = list[0].id;
+  return `<ul class="list">${list.map(e => `
+    <li class="${e.id === state.sel[key] ? 'active' : ''}"><button data-select="${key}:${e.id}">
+      <span class="pip" style="background:${FOLDERS[e.folder].c}"></span>
+      <span class="row"><span class="from">${esc(nameOf(e.from))}</span><span class="time">${fmt(e.date)}</span></span>
+      <span class="subj">${esc(e.subject)}</span>
+    </button></li>`).join('')}</ul>`;
+}
 
-/* ---------- events ---------- */
-$('queue').addEventListener('click', ev => { const b = ev.target.closest('[data-id]'); if (b) { state.selected = b.dataset.id; render(); } });
-$('analysis').addEventListener('click', ev => { const a = ev.target.closest('[data-act]'); if (a) toast(a.dataset.act); });
-const closeForm = () => { $('submitForm').hidden = true; $('toggleSubmit').setAttribute('aria-expanded', 'false'); };
-$('toggleSubmit').addEventListener('click', () => { const f = $('submitForm'); f.hidden = !f.hidden; $('toggleSubmit').setAttribute('aria-expanded', String(!f.hidden)); if (!f.hidden) $('rawInput').focus(); });
-$('cancelSubmit').addEventListener('click', closeForm);
-$('submitForm').addEventListener('submit', async ev => {
+function detail(e) {
+  if (!e) return '';
+  const r = e.result, last = e.history[e.history.length - 1];
+  const hasConf = typeof r.confidence === 'number';
+  const acts = Object.keys(FOLDERS).filter(f => f !== e.folder).map(f => {
+    const cls = { inbox: '', quarantine: 'q', safe: 's', escalated: 'e' }[f];
+    const lbl = { inbox: 'Restore to inbox', quarantine: 'Quarantine', safe: 'Mark safe', escalated: 'Escalate' }[f];
+    return `<button class="btn ${cls}" data-move="${f}" data-id="${e.id}">${lbl}</button>`;
+  }).join('');
+  return `
+    <section class="panel">
+      <div class="airmail" aria-hidden="true"></div>
+      <div class="env-head">
+        <div>
+          <h3>${esc(e.subject)}</h3>
+          <div class="meta">${esc(e.from)} · ${fmt(e.date)}</div>
+          ${e.folder !== 'inbox' ? `<div class="by">Moved by ${esc(last.by)} on ${fmt(last.at)}</div>` : ''}
+        </div>
+        <span class="stamp ${e.folder}">${FOLDERS[e.folder].label}</span>
+      </div>
+      ${e.note ? `<div class="block">${ph('Escalation note', esc(e.note))}</div>` : ''}
+      <div class="verdict">
+        ${postmark(r.prediction)}
+        <div class="conf">
+          ${hasConf ? `<div><b style="font-size:28px;font-weight:800">${Math.round(r.confidence * 100)}%</b> <span class="note">confidence</span><div class="meter"><i style="width:${r.confidence * 100}%"></i></div></div>`
+                    : `<div><b>Confidence</b> <span class="note">· placeholder, shown if the model provides one</span><div class="meter"></div></div>`}
+          ${r.explanation ? `<div class="ph" style="border-style:solid;background:var(--bg);color:var(--ink)"><b>Why</b>${esc(r.explanation)}</div>`
+                          : ph('Why', 'Qwen will explain in plain language why it made this prediction.')}
+        </div>
+      </div>
+      <div class="block">
+        <h4>Suspicious features</h4>
+        <ul class="features">${FEATURES.map(([k, l]) => `<li><span>${l}</span>${r.features?.[k] ? `<span>${esc(r.features[k])}</span>` : '<span class="pending">Awaiting model</span>'}</li>`).join('')}</ul>
+      </div>
+      <div class="actions">${acts}<button class="btn ask" data-ask="${e.id}">Ask assistant</button></div>
+      ${e.folder === 'escalated' ? '' : `<div class="note-box" id="escNote" hidden>
+        <div class="field"><label for="escText">Note for the senior analyst</label>
+        <textarea class="input" id="escText" rows="3" placeholder="What should they look at?"></textarea></div>
+        <div class="actions-row"><button class="btn" data-cancel-esc>Cancel</button><button class="btn primary" data-confirm-esc="${e.id}">Escalate</button></div>
+      </div>`}
+      <details class="raw"><summary>View raw email</summary><pre>${esc(e.raw)}</pre></details>
+    </section>`;
+}
+
+function analyze() {
+  const list = inFolder('inbox');
+  return `
+    <div class="head"><div><h2>Analyze</h2><p>Submit an email, review what the model found, then sort it into a folder.</p></div>
+      <button class="btn primary" data-toggle-submit>${state.showSubmit ? 'Close' : 'Submit email'}</button></div>
+    ${state.showSubmit ? `
+    <section class="panel"><div class="airmail" aria-hidden="true"></div><div class="panel-head"><h3>Submit an email</h3></div>
+      <form class="submit-box" id="submitForm">
+        <div class="field"><label for="rawInput">Raw email, including headers</label>
+          <textarea class="input" id="rawInput" rows="9" spellcheck="false" placeholder="From: &quot;Sender&quot; &lt;sender@example.com&gt;&#10;Subject: ...&#10;Date: ...&#10;&#10;Body text"></textarea></div>
+        <div class="field"><label for="fileInput">Or upload an .eml or .txt file</label>
+          <input class="input" id="fileInput" type="file" accept=".eml,.txt,message/rfc822,text/plain"></div>
+        <div class="actions-row"><button type="button" class="btn" data-toggle-submit>Cancel</button><button class="btn primary" type="submit">Analyze email</button></div>
+      </form></section>` : ''}
+    <div class="split">
+      <section class="panel"><div class="panel-head"><h3>Inbox</h3><span class="note">${list.length} waiting</span></div>
+        ${emailList(list, 'analyze') || '<div class="empty">Inbox is empty. Submit an email to analyze it.</div>'}</section>
+      ${detail(list.find(e => e.id === state.sel.analyze))}
+    </div>`;
+}
+
+function folderView(f) {
+  const meta = FOLDERS[f], list = inFolder(f);
+  return `
+    <div class="head"><div><h2>${meta.label}</h2><p>${meta.blurb}</p></div></div>
+    <div class="split">
+      <section class="panel">
+        <div class="fold-head"><span class="stamp ${f}">${meta.label}</span><span class="note">${list.length} email${list.length === 1 ? '' : 's'}</span></div>
+        ${emailList(list, f) || `<div class="empty">Nothing here yet. Emails you send to ${meta.label.toLowerCase()} from Analyze land here.</div>`}
+      </section>
+      ${detail(list.find(e => e.id === state.sel[f]))}
+    </div>`;
+}
+
+function assistant() {
+  const ctx = state.emails.find(e => e.id === state.chatCtx);
+  const key = ctx ? ctx.id : 'general';
+  const msgs = state.chats[key] ||= [];
+  return `
+    <div class="head"><div><h2>Assistant</h2><p>Ask Qwen about a specific email or about phishing in general.</p></div></div>
+    <section class="panel chat">
+      <div class="ctx"><label for="ctxSel">Talking about</label>
+        <select id="ctxSel"><option value="">General question</option>
+          ${state.emails.map(e => `<option value="${e.id}" ${e.id === state.chatCtx ? 'selected' : ''}>${esc(e.subject)} (${FOLDERS[e.folder].label})</option>`).join('')}
+        </select></div>
+      <div class="log">
+        <div class="msg sys">${ctx ? 'About: ' + esc(ctx.subject) : 'General conversation'}</div>
+        ${msgs.length ? '' : '<div class="msg bot">Assistant greeting will appear here.</div>'}
+        ${msgs.map(m => `<div class="msg ${m.role}">${esc(m.text)}</div>`).join('')}
+      </div>
+      <form class="composer" id="composer">
+        <input class="input" id="chatInput" placeholder="Ask about ${ctx ? 'this email' : 'phishing threats'}…" autocomplete="off" aria-label="Message">
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+    </section>`;
+}
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(text, view) {
+  document.querySelector('.toast')?.remove(); clearTimeout(toastTimer);
+  const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status');
+  el.innerHTML = `<span>${esc(text)}</span>${view && view !== state.view ? '<button>View</button>' : ''}`;
+  el.querySelector('button')?.addEventListener('click', () => { el.remove(); go(view); });
+  document.body.appendChild(el); toastTimer = setTimeout(() => el.remove(), 3500);
+}
+
+/* ---------- Events ---------- */
+$('loginForm').addEventListener('submit', async ev => {
   ev.preventDefault();
-  const raw = $('rawInput').value.trim();
-  if (!raw) return toast('Paste an email to analyze');
-  $('rawInput').value = ''; closeForm();
-  await addEmail(raw, true);
+  const u = $('user').value.trim();
+  if (await login(u, $('pass').value)) {
+    state.user = u; $('loginErr').hidden = true; $('pass').value = '';
+    try { sessionStorage.setItem('pac-user', u); } catch {}
+    const v = location.hash.slice(1); state.view = VIEWS.includes(v) ? v : 'dashboard'; render();
+  } else { $('loginErr').hidden = false; }
 });
-$('composer').addEventListener('submit', ev => { ev.preventDefault(); const v = $('chatInput').value; $('chatInput').value = ''; send(v); });
-$('clearChat').addEventListener('click', () => { if (state.selected) { state.chats[state.selected] = []; render(); } });
+$('logout').addEventListener('click', () => { state.user = null; try { sessionStorage.removeItem('pac-user'); } catch {} render(); $('user').focus(); });
+document.querySelector('.side').addEventListener('click', ev => { const n = ev.target.closest('[data-view]'); if (n) go(n.dataset.view); });
 
+$('main').addEventListener('click', ev => {
+  const t = ev.target.closest('button'); if (!t) return;
+  if (t.dataset.go) { if (t.hasAttribute('data-open-submit')) state.showSubmit = true; go(t.dataset.go); }
+  else if (t.dataset.select) { const [k, id] = t.dataset.select.split(':'); state.sel[k] = id; render(); }
+  else if (t.hasAttribute('data-toggle-submit')) { state.showSubmit = !state.showSubmit; render(); if (state.showSubmit) $('rawInput')?.focus(); }
+  else if (t.dataset.move === 'escalated') { $('escNote').hidden = false; $('escText').focus(); }
+  else if (t.dataset.move) move(t.dataset.id, t.dataset.move);
+  else if (t.hasAttribute('data-cancel-esc')) $('escNote').hidden = true;
+  else if (t.dataset.confirmEsc) move(t.dataset.confirmEsc, 'escalated', $('escText').value.trim() || 'No note added.');
+  else if (t.dataset.ask) { state.chatCtx = t.dataset.ask; go('assistant'); }
+});
+$('main').addEventListener('change', async ev => {
+  if (ev.target.id === 'ctxSel') { state.chatCtx = ev.target.value; render(); }
+  if (ev.target.id === 'fileInput' && ev.target.files[0]) { $('rawInput').value = await ev.target.files[0].text(); }
+});
+$('main').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  if (ev.target.id === 'submitForm') {
+    const raw = $('rawInput').value.trim();
+    if (!raw) return toast('Paste an email or upload a file first.');
+    const e = await addEmail(raw);
+    state.sel.analyze = e.id; state.showSubmit = false; render();
+    toast('Email added to the inbox for analysis.');
+  }
+  if (ev.target.id === 'composer') {
+    const text = $('chatInput').value.trim(); if (!text) return;
+    const key = state.chatCtx || 'general';
+    const email = state.emails.find(e => e.id === state.chatCtx);
+    state.chats[key].push({ role: 'user', text }); render();
+    const reply = await askAssistant(text, email);
+    state.chats[key].push({ role: 'bot', text: reply });
+    if (state.view === 'assistant') { render(); $('chatInput')?.focus(); }
+  }
+});
+
+/* ---------- Boot ---------- */
 (async () => {
-  for (const raw of [...SAMPLES].reverse()) await addEmail(raw);
-  state.selected = state.emails[0].id; render();
+  for (const raw of SAMPLES) await addEmail(raw);
+  try { state.user = sessionStorage.getItem('pac-user'); } catch {}
+  const v = location.hash.slice(1); state.view = VIEWS.includes(v) ? v : 'dashboard';
+  render();
 })();
+}
 </script>
-
-</body></html>
+</body>
+</html>

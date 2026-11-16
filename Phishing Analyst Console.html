@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phishing Analyst Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: login screen, then app shell = sidebar nav | main view (dashboard, analyze, assistant, triage folders) */
+:root {
+  --bg: #eef1f5; --panel: #ffffff; --sunk: #f5f7fa; --line: #d8dee7;
+  --fg: #172033; --muted: #5b6678; --accent: #2448b8; --accent-soft: #e4eafb;
+  --side: #172033; --side-fg: #c9d2e3; --side-active: #2a3754;
+  --warn: #a86400; --warn-soft: #fbf0dc;
+  --q: #c23b2e; --q-soft: #fbe7e4;      /* quarantined */
+  --s: #1f7a4d; --s-soft: #e2f3ea;      /* marked safe */
+  --e: #8a4fc0; --e-soft: #f1e8fa;      /* escalated */
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141d; --panel: #161d29; --sunk: #1b2331; --line: #2a3446;
+  --fg: #e4e9f2; --muted: #93a0b5; --accent: #7d9cff; --accent-soft: #1f2a48;
+  --side: #0b0f16; --side-fg: #a9b4c8; --side-active: #1f2a48;
+  --warn: #f0b35a; --warn-soft: #362a14;
+  --q: #ff7a6b; --q-soft: #3a1c1a; --s: #5fd39a; --s-soft: #14301f; --e: #c39bff; --e-soft: #2a1d3f;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f141d; --panel: #161d29; --sunk: #1b2331; --line: #2a3446;
+  --fg: #e4e9f2; --muted: #93a0b5; --accent: #7d9cff; --accent-soft: #1f2a48;
+  --side: #0b0f16; --side-fg: #a9b4c8; --side-active: #1f2a48;
+  --warn: #f0b35a; --warn-soft: #362a14;
+  --q: #ff7a6b; --q-soft: #3a1c1a; --s: #5fd39a; --s-soft: #14301f; --e: #c39bff; --e-soft: #2a1d3f;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 7px 13px; font-weight: 500; font-size: 13px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+.btn.q { color: var(--q); } .btn.s { color: var(--s); } .btn.e { color: var(--e); }
+.btn.q:hover { border-color: var(--q); } .btn.s:hover { border-color: var(--s); } .btn.e:hover { border-color: var(--e); }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; background: var(--panel); }
+textarea.input { font-family: var(--f-mono); font-size: 12.5px; resize: vertical; }
+.tag { font-family: var(--f-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.tag.proto { color: var(--warn); background: var(--warn-soft); }
+.tag.inbox { color: var(--accent); background: var(--accent-soft); }
+.tag.quarantine { color: var(--q); background: var(--q-soft); }
+.tag.safe { color: var(--s); background: var(--s-soft); }
+.tag.escalated { color: var(--e); background: var(--e-soft); }
+
+/* ---------- Login ---------- */
+.login { min-height: 100%; display: grid; place-items: center; padding-block: 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.login-card { width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+.login-card .mark { width: 40px; height: 40px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; }
+.login-card h1 { font-size: 1.4rem; font-weight: 800; }
+.login-card p { margin: 0; color: var(--muted); }
+.login-err { color: var(--q); font-size: 13px; }
+.demo { font-size: 12px; color: var(--muted); background: var(--sunk); border: 1px dashed var(--line); border-radius: 6px; padding: 8px 10px; }
+.demo code { font-family: var(--f-mono); color: var(--fg); }
+
+/* ---------- App shell ---------- */
+.shell { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 100%; }
+.side { background: var(--side); color: var(--side-fg); display: flex; flex-direction: column; gap: 4px; padding: 18px 12px; padding-left: max(12px, env(safe-area-inset-left, 0px)); }
+.side .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 16px; color: #fff; font-family: var(--f-display); font-weight: 800; font-size: 15px; }
+.side .brand .mark { width: 28px; height: 28px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; flex: none; }
+.side .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; padding: 14px 10px 4px; opacity: .7; }
+.nav { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+.nav:hover { background: var(--side-active); color: #fff; }
+.nav.active { background: var(--side-active); color: #fff; }
+.nav:focus-visible { outline: 2px solid var(--accent); }
+.nav .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.nav .count { margin-left: auto; font-family: var(--f-mono); font-size: 11px; opacity: .85; }
+.side .user { margin-top: auto; padding: 12px 10px 0; border-top: 1px solid var(--side-active); display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.side .user button { all: unset; cursor: pointer; font-size: 12px; text-decoration: underline; }
+.side .user button:focus-visible { outline: 2px solid var(--accent); }
+
+main { min-width: 0; padding-block: 22px 32px; padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.page-head h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.01em; }
+.page-head p { margin: 2px 0 0; color: var(--muted); max-width: 62ch; }
+
+@media (max-width: 820px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 4px; }
+  .side .brand { padding: 0 8px 0 0; width: 100%; }
+  .side .group { display: none; }
+  .side .user { margin: 0 0 0 auto; border: 0; padding: 0 4px; }
+  .side .user span { display: none; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel-head h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.panel-body { padding: 16px; }
+
+/* placeholders */
+.ph { border: 1.5px dashed var(--line); border-radius: 8px; background: var(--sunk); padding: 14px 16px; color: var(--muted); font-style: italic; }
+.ph .label { display: block; font-style: normal; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 4px; }
+
+/* ---------- Dashboard ---------- */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { all: unset; box-sizing: border-box; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; border-top: 3px solid var(--c); }
+.tile:hover { border-color: var(--c); }
+.tile:focus-visible { outline: 2px solid var(--accent); }
+.tile b { font-family: var(--f-display); font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile span { font-size: 12px; color: var(--muted); }
+.dash-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 900px) { .dash-grid { grid-template-columns: minmax(0, 1fr); } }
+.ph-chart { height: 180px; display: grid; place-items: center; text-align: center; }
+.activity { list-style: none; margin: 0; padding: 0; }
+.activity li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 16px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.activity li:last-child { border-bottom: 0; }
+.activity .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity time { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.empty-note { padding: 16px; color: var(--muted); }
+
+/* ---------- List + detail (Analyze, triage folders) ---------- */
+.split { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1000px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.list { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow-y: auto; }
+.list li button { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 11px 16px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.list li button:hover { background: var(--sunk); }
+.list li button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.list li.active button { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; align-items: baseline; }
+.from { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.time { font-family: var(--f-mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.subj { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.submit-box { display: flex; flex-direction: column; gap: 12px; }
+.submit-box .actions-row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+.detail-head { padding: 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.detail-head h3 { font-size: 1.2rem; font-weight: 700; overflow-wrap: anywhere; }
+.detail-head .meta { font-family: var(--f-mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.result { padding: 18px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--line); }
+.result h4 { margin: 0; font-family: var(--f-display); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .pair { grid-template-columns: minmax(0, 1fr); } }
+.meter { height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 10px); margin-top: 8px; }
+.features { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .features { grid-template-columns: minmax(0, 1fr); } }
+.features li { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; }
+.features li span:first-child { font-weight: 500; }
+.features li .pending { font-size: 12px; color: var(--muted); font-style: italic; }
+.status-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.note-box { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 8px; }
+details.raw { padding: 14px 18px; }
+details.raw summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details.raw pre { font-family: var(--f-mono); font-size: 12px; background: var(--sunk); border: 1px solid var(--line); border-radius: 6px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 10px 0 0; }
+
+/* folder table */
+.folder-intro { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.folder-intro .bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--c); }
+
+/* ---------- Assistant ---------- */
+.chat { display: flex; flex-direction: column; height: min(72vh, 680px); min-height: 420px; }
+.chat .ctx { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.chat .ctx label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.chat .ctx select { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); max-width: 100%; min-width: 0; }
+.log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: min(80%, 60ch); padding: 9px 13px; border-radius: 8px; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--panel); border-bottom-right-radius: 2px; }
+.msg.bot { align-self: flex-start; background: var(--sunk); border: 1.5px dashed var(--line); color: var(--muted); font-style: italic; border-bottom-left-radius: 2px; }
+.msg.sys { align-self: center; font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-align: center; }
+.composer { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.composer input { flex: 1; min-width: 0; }
+
+.toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 9px 14px; border-radius: 6px; font-size: 13px; z-index: 20; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); }
+.toast button { all: unset; cursor: pointer; text-decoration: underline; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="login" id="loginView">
+  <form class="login-card" id="loginForm" novalidate>
+    <div class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></div>
+    <div>
+      <h1>Phishing Analyst Console</h1>
+      <p>Administrator sign in</p>
+    </div>
+    <div class="field"><label for="user">Username</label><input class="input" id="user" autocomplete="username"></div>
+    <div class="field"><label for="pass">Password</label><input class="input" id="pass" type="password" autocomplete="current-password"></div>
+    <div class="login-err" id="loginErr" hidden>Wrong username or password. Check both and try again.</div>
+    <button class="btn primary" type="submit">Sign in</button>
+    <div class="demo">Prototype login. Use <code>admin</code> / <code>admin123</code>. Real sign-in will be checked by the backend.</div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="shell" id="appView" hidden>
+  <nav class="side" aria-label="Main">
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></span>Analyst Console</div>
+    <button class="nav" data-view="dashboard">Dashboard</button>
+    <button class="nav" data-view="analyze">Analyze <span class="count" data-count="inbox"></span></button>
+    <button class="nav" data-view="assistant">Assistant</button>
+    <div class="group">Triage</div>
+    <button class="nav" data-view="quarantine"><span class="dot" style="background:var(--q)"></span>Quarantined <span class="count" data-count="quarantine"></span></button>
+    <button class="nav" data-view="safe"><span class="dot" style="background:var(--s)"></span>Marked safe <span class="count" data-count="safe"></span></button>
+    <button class="nav" data-view="escalated"><span class="dot" style="background:var(--e)"></span>Escalated <span class="count" data-count="escalated"></span></button>
+    <div class="user"><span id="whoami">admin</span><button id="logout">Sign out</button></div>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<script>
+/* =====================================================================
+   PLACEHOLDER AI — one fine-tuned Qwen model.
+   Swap these stubs for calls to your Qwen server. While they return
+   null, the page shows placeholder boxes in their place.
+   ===================================================================== */
+const QWEN = { endpoint: '/v1/chat/completions', model: 'qwen-phish' }; // TODO
+
+/** TODO: send email.raw to Qwen. Expected shape:
+ *  { prediction: 'Phishing'|'Legitimate',
+ *    confidence: 0..1 | null,          // null if the model doesn't provide one
+ *    explanation: string,
+ *    features: { links, urgency, sender, attachments, credentials }  // each: string finding or null
+ *  } */
+async function detectThreat(email) {
+  return { prediction: null, confidence: null, explanation: null, features: {} };
+}
+
+/** TODO: send question + email + detection result to Qwen, return its reply text. */
+async function askAssistant(question, email) {
+  await new Promise(r => setTimeout(r, 350));
+  return 'Qwen response will appear here.';
+}
+
+/** TODO: replace with a POST to your backend auth route. */
+async function login(user, pass) {
+  return user === 'admin' && pass === 'admin123';
+}
+
+/* ---------- Example emails ---------- */
+const SAMPLES = [
+`From: "GitHub" <noreply@github.com>
+Subject: [company/infra] Pull request #412 merged
+Date: Wed, 11 Nov 2026 14:12:55 -0500
+
+Merged #412 into main.`,
+`From: "Benefits Team" <benefits@company.com>
+Subject: Open enrollment documents for 2027
+Date: Wed, 11 Nov 2026 16:40:10 -0500
+
+Open enrollment starts Monday. The benefits guide is attached.`,
+`From: "IT Service Desk" <helpdesk@company-support.net>
+Subject: Password expires today - verify your account
+Date: Thu, 12 Nov 2026 08:02:44 -0500
+
+Verify your credentials: https://login.company-support.net/verify`,
+`From: "Accounts Payable" <billing@micros0ft-invoices.com>
+Subject: URGENT: Overdue invoice #INV-88213
+Date: Thu, 12 Nov 2026 09:14:02 -0500
+
+Your account is past due. Pay here: http://185.22.41.9/pay/invoice?id=88213`
+];
+
+/* ---------- Constants ---------- */
+const FOLDERS = {
+  inbox:      { label: 'Inbox',       verb: 'Restored to inbox' },
+  quarantine: { label: 'Quarantined', verb: 'Quarantined', c: '--q', blurb: 'Held away from recipients. Nothing here reaches a mailbox until an admin releases it.' },
+  safe:       { label: 'Marked safe', verb: 'Marked safe', c: '--s', blurb: 'Reviewed and released to the recipient.' },
+  escalated:  { label: 'Escalated',   verb: 'Escalated',   c: '--e', blurb: 'Sent to a senior analyst for review, with the escalating admin\'s note.' }
+};
+const FEATURES = [
+  ['links', 'Unusual links'],
+  ['urgency', 'Urgent language'],
+  ['sender', 'Sender mismatch'],
+  ['attachments', 'Suspicious attachments'],
+  ['credentials', 'Credential request']
+];
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const nameOf = v => { const m = (v || '').match(/^"?([^"<]+)"?\s*</); return m ? m[1].trim() : v; };
+const fmt = d => { const t = new Date(d); return isNaN(t) ? '' : t.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
+function parseEmail(raw) {
+  const [head] = raw.replace(/\r/g, '').split(/\n\s*\n/);
+  const h = {};
+  head.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) h[l.slice(0, i).trim().toLowerCase()] = l.slice(i + 1).trim(); });
+  return { raw, from: h.from || '(unknown sender)', subject: h.subject || '(no subject)', date: h.date || new Date().toString() };
+}
+const ph = (label, text) => `<div class="ph"><span class="label">${label}</span>${text}</div>`;
+
+/* ---------- State ---------- */
+const state = { user: null, view: 'dashboard', emails: [], sel: {}, chats: {}, chatCtx: '', activity: [], showSubmit: false };
+const inFolder = f => state.emails.filter(e => e.folder === f);
+
+async function addEmail(raw) {
+  const e = parseEmail(raw);
+  e.id = 'e' + Math.random().toString(36).slice(2, 8);
+  e.folder = 'inbox';
+  e.history = [{ folder: 'inbox', at: new Date(), by: state.user || 'system' }];
+  e.result = await detectThreat(e);
+  state.emails.unshift(e);
+  return e;
+}
+
+function move(id, folder, note) {
+  const e = state.emails.find(x => x.id === id);
+  if (!e || e.folder === folder) return;
+  e.folder = folder;
+  e.note = note || '';
+  e.history.push({ folder, at: new Date(), by: state.user, note });
+  state.activity.unshift({ folder, subject: e.subject, at: new Date(), by: state.user });
+  const rest = inFolder('inbox');
+  if (state.sel.analyze === id) state.sel.analyze = rest[0]?.id;
+  state.sel[folder] = id;
+  render();
+  toast(`${FOLDERS[folder].verb}: ${e.subject}`, folder === 'inbox' ? 'analyze' : folder);
+}
+
+/* ---------- Routing ---------- */
+const VIEWS = ['dashboard', 'analyze', 'assistant', 'quarantine', 'safe', 'escalated'];
+function go(view) { if (location.hash.slice(1) !== view) location.hash = view; else { state.view = view; render(); } }
+window.addEventListener('hashchange', () => { const v = location.hash.slice(1); state.view = VIEWS.includes(v) ? v : 'dashboard'; render(); });
+
+/* ---------- Render ---------- */
+function render() {
+  $('loginView').hidden = !!state.user;
+  $('appView').hidden = !state.user;
+  if (!state.user) return;
+  $('whoami').textContent = state.user;
+  document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n.dataset.view === state.view));
+  document.querySelectorAll('[data-count]').forEach(c => { const n = inFolder(c.dataset.count).length; c.textContent = n || ''; });
+  $('main').innerHTML = ({ dashboard, analyze, assistant })[state.view]?.() ?? folderView(state.view);
+  const log = document.querySelector('.log'); if (log) log.scrollTop = log.scrollHeight;
+}
+
+function dashboard() {
+  const tile = (f, c, label) => `<button class="tile" data-go="${f === 'inbox' ? 'analyze' : f}" style="--c:var(${c})"><b>${inFolder(f).length}</b><span>${label}</span></button>`;
+  return `
+    <div class="page-head"><div><h2>Dashboard</h2><p>Where every submitted email stands right now.</p></div>
+      <button class="btn primary" data-go="analyze" data-open-submit>Submit email</button></div>
+    <div class="tiles">
+      ${tile('inbox', '--accent', 'Awaiting review')}
+      ${tile('quarantine', '--q', 'Quarantined')}
+      ${tile('safe', '--s', 'Marked safe')}
+      ${tile('escalated', '--e', 'Escalated')}
+    </div>
+    <div class="dash-grid">
+      <section class="panel"><div class="panel-head"><h3>Detection summary</h3><span class="tag proto">Needs model</span></div>
+        <div class="panel-body">${ph('Chart', '<div class="ph-chart">Phishing vs. legitimate predictions over time will appear here once Qwen is connected.</div>')}</div></section>
+      <section class="panel"><div class="panel-head"><h3>Recent activity</h3></div>
+        ${state.activity.length ? `<ul class="activity">${state.activity.slice(0, 8).map(a => `
+          <li><span class="tag ${a.folder}">${FOLDERS[a.folder].label}</span><span class="what">${esc(a.subject)}</span><time>${fmt(a.at)}</time></li>`).join('')}</ul>`
+          : '<div class="empty-note">No actions yet. Quarantine, mark safe or escalate an email from Analyze and it will show up here.</div>'}
+      </section>
+    </div>`;
+}
+
+function emailList(list, key) {
+  if (!list.length) return '';
+  if (!list.some(e => e.id === state.sel[key])) state.sel[key] = list[0].id;
+  return `<ul class="list">${list.map(e => `
+    <li class="${e.id === state.sel[key] ? 'active' : ''}"><button data-select="${key}:${e.id}">
+      <span class="row"><span class="from">${esc(nameOf(e.from))}</span><span class="time">${fmt(e.date)}</span></span>
+      <span class="subj">${esc(e.subject)}</span>
+    </button></li>`).join('')}</ul>`;
+}
+
+function detail(e) {
+  if (!e) return '';
+  const r = e.result, last = e.history[e.history.length - 1];
+  const conf = r.confidence == null
+    ? ph('Confidence', 'Confidence score, if the model provides one<div class="meter"></div>')
+    : `<div class="ph" style="font-style:normal"><span class="label">Confidence</span>${Math.round(r.confidence * 100)}%</div>`;
+  const acts = Object.keys(FOLDERS).filter(f => f !== e.folder).map(f => {
+    const cls = { inbox: '', quarantine: 'q', safe: 's', escalated: 'e' }[f];
+    const lbl = { inbox: 'Restore to inbox', quarantine: 'Quarantine', safe: 'Mark safe', escalated: 'Escalate' }[f];
+    return `<button class="btn ${cls}" data-move="${f}" data-id="${e.id}">${lbl}</button>`;
+  }).join('');
+  return `
+    <section class="panel">
+      <div class="detail-head">
+        <div class="status-line"><span class="tag ${e.folder}">${FOLDERS[e.folder].label}</span>
+          ${e.folder !== 'inbox' ? `<span>by ${esc(last.by)} · ${fmt(last.at)}</span>` : ''}</div>
+        <h3>${esc(e.subject)}</h3>
+        <span class="meta">${esc(e.from)} · ${fmt(e.date)}</span>
+        ${e.note ? `<div class="ph" style="font-style:normal;margin-top:6px"><span class="label">Escalation note</span>${esc(e.note)}</div>` : ''}
+      </div>
+      <div class="result">
+        <h4>Detection result</h4>
+        <div class="pair">
+          ${r.prediction == null ? ph('Prediction', 'Phishing or legitimate') : `<div class="ph" style="font-style:normal"><span class="label">Prediction</span>${esc(r.prediction)}</div>`}
+          ${conf}
+        </div>
+        ${r.explanation == null ? ph('Explanation', 'Qwen will explain in plain language why it made this prediction.') : `<div class="ph" style="font-style:normal"><span class="label">Explanation</span>${esc(r.explanation)}</div>`}
+      </div>
+      <div class="result">
+        <h4>Suspicious features</h4>
+        <ul class="features">${FEATURES.map(([k, l]) => `<li><span>${l}</span>${r.features?.[k] ? `<span>${esc(r.features[k])}</span>` : '<span class="pending">Awaiting model</span>'}</li>`).join('')}</ul>
+      </div>
+      <div class="actions">${acts}<button class="btn" data-ask="${e.id}" style="margin-left:auto">Ask assistant</button></div>
+      ${e.folder === 'escalated' ? '' : `<div class="note-box" id="escNote" hidden>
+        <div class="field"><label for="escText">Escalation note for the senior analyst</label>
+        <textarea class="input" id="escText" rows="3" placeholder="What should they look at?"></textarea></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-cancel-esc>Cancel</button><button class="btn primary" data-confirm-esc="${e.id}">Escalate</button></div>
+      </div>`}
+      <details class="raw"><summary>View raw email</summary><pre>${esc(e.raw)}</pre></details>
+    </section>`;
+}
+
+function analyze() {
+  const list = inFolder('inbox');
+  const sel = list.find(e => e.id === state.sel.analyze) || list[0];
+  return `
+    <div class="page-head"><div><h2>Analyze</h2><p>Submit an email for analysis, review the result, then send it to the right folder.</p></div>
+      <button class="btn primary" data-toggle-submit>${state.showSubmit ? 'Close' : 'Submit email'}</button></div>
+    ${state.showSubmit ? `
+    <section class="panel"><div class="panel-head"><h3>Submit an email</h3></div>
+      <form class="panel-body submit-box" id="submitForm">
+        <div class="field"><label for="rawInput">Raw email, including headers</label>
+          <textarea class="input" id="rawInput" rows="9" spellcheck="false" placeholder="From: &quot;Sender&quot; &lt;sender@example.com&gt;&#10;Subject: ...&#10;Date: ...&#10;&#10;Body text"></textarea></div>
+        <div class="field"><label for="fileInput">Or upload an .eml or .txt file</label>
+          <input class="input" id="fileInput" type="file" accept=".eml,.txt,message/rfc822,text/plain"></div>
+        <div class="actions-row"><button type="button" class="btn" data-toggle-submit>Cancel</button><button class="btn primary" type="submit">Analyze email</button></div>
+      </form></section>` : ''}
+    <div class="split">
+      <section class="panel"><div class="panel-head"><h3>Inbox</h3><span class="time">${list.length} waiting</span></div>
+        ${emailList(list, 'analyze') || '<div class="empty-note">Inbox is empty. Submit an email to analyze it.</div>'}</section>
+      ${detail(list.find(e => e.id === state.sel.analyze) || sel)}
+    </div>`;
+}
+
+function folderView(f) {
+  const meta = FOLDERS[f], list = inFolder(f);
+  return `
+    <div class="page-head"><div><h2>${meta.label}</h2><p>${meta.blurb}</p></div></div>
+    <div class="split">
+      <section class="panel" style="--c:var(${meta.c})">
+        <div class="folder-intro"><span class="bar"></span>${list.length} email${list.length === 1 ? '' : 's'}</div>
+        ${emailList(list, f) || `<div class="empty-note">Nothing here yet. Emails you send to ${meta.label.toLowerCase()} from Analyze land here.</div>`}
+      </section>
+      ${detail(list.find(e => e.id === state.sel[f]))}
+    </div>`;
+}
+
+function assistant() {
+  const ctx = state.emails.find(e => e.id === state.chatCtx);
+  const key = ctx ? ctx.id : 'general';
+  const msgs = state.chats[key] ||= [];
+  return `
+    <div class="page-head"><div><h2>Assistant</h2><p>Ask Qwen about a specific email or about phishing in general.</p></div></div>
+    <section class="panel chat">
+      <div class="ctx"><label for="ctxSel">Talking about</label>
+        <select id="ctxSel"><option value="">General question</option>
+          ${state.emails.map(e => `<option value="${e.id}" ${e.id === state.chatCtx ? 'selected' : ''}>${esc(e.subject)} (${FOLDERS[e.folder].label})</option>`).join('')}
+        </select></div>
+      <div class="log">
+        <div class="msg sys">${ctx ? 'Context: ' + esc(ctx.subject) : 'General conversation'}</div>
+        ${msgs.length ? '' : '<div class="msg bot">Assistant greeting will appear here.</div>'}
+        ${msgs.map(m => `<div class="msg ${m.role}">${esc(m.text)}</div>`).join('')}
+      </div>
+      <form class="composer" id="composer">
+        <input class="input" id="chatInput" placeholder="Ask about ${ctx ? 'this email' : 'phishing threats'}…" autocomplete="off" aria-label="Message">
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+    </section>`;
+}
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(text, view) {
+  document.querySelector('.toast')?.remove(); clearTimeout(toastTimer);
+  const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status');
+  el.innerHTML = `<span>${esc(text)}</span>${view && view !== state.view ? `<button>View</button>` : ''}`;
+  el.querySelector('button')?.addEventListener('click', () => { el.remove(); go(view); });
+  document.body.appendChild(el); toastTimer = setTimeout(() => el.remove(), 3500);
+}
+
+/* ---------- Events ---------- */
+$('loginForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const u = $('user').value.trim(), p = $('pass').value;
+  if (await login(u, p)) {
+    state.user = u; $('loginErr').hidden = true; $('pass').value = '';
+    try { sessionStorage.setItem('pac-user', u); } catch {}
+    const v = location.hash.slice(1); state.view = VIEWS.includes(v) ? v : 'dashboard'; render();
+  } else { $('loginErr').hidden = false; }
+});
+$('logout').addEventListener('click', () => { state.user = null; try { sessionStorage.removeItem('pac-user'); } catch {} render(); $('user').focus(); });
+document.querySelector('.side').addEventListener('click', ev => { const n = ev.target.closest('[data-view]'); if (n) go(n.dataset.view); });
+
+$('main').addEventListener('click', ev => {
+  const t = ev.target.closest('button'); if (!t) return;
+  if (t.dataset.go) { if (t.hasAttribute('data-open-submit')) state.showSubmit = true; go(t.dataset.go); }
+  else if (t.dataset.select) { const [k, id] = t.dataset.select.split(':'); state.sel[k] = id; render(); }
+  else if (t.hasAttribute('data-toggle-submit')) { state.showSubmit = !state.showSubmit; render(); if (state.showSubmit) $('rawInput')?.focus(); }
+  else if (t.dataset.move === 'escalated') { $('escNote').hidden = false; $('escText').focus(); }
+  else if (t.dataset.move) move(t.dataset.id, t.dataset.move);
+  else if (t.hasAttribute('data-cancel-esc')) $('escNote').hidden = true;
+  else if (t.dataset.confirmEsc) move(t.dataset.confirmEsc, 'escalated', $('escText').value.trim() || 'No note added.');
+  else if (t.dataset.ask) { state.chatCtx = t.dataset.ask; go('assistant'); }
+});
+$('main').addEventListener('change', async ev => {
+  if (ev.target.id === 'ctxSel') { state.chatCtx = ev.target.value; render(); }
+  if (ev.target.id === 'fileInput' && ev.target.files[0]) { $('rawInput').value = await ev.target.files[0].text(); }
+});
+$('main').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  if (ev.target.id === 'submitForm') {
+    const raw = $('rawInput').value.trim();
+    if (!raw) return toast('Paste an email or upload a file first.');
+    const e = await addEmail(raw);
+    state.sel.analyze = e.id; state.showSubmit = false; render();
+    toast('Email added to the inbox for analysis.');
+  }
+  if (ev.target.id === 'composer') {
+    const text = $('chatInput').value.trim(); if (!text) return;
+    const key = state.chatCtx || 'general';
+    const email = state.emails.find(e => e.id === state.chatCtx);
+    state.chats[key].push({ role: 'user', text }); render();
+    const reply = await askAssistant(text, email);
+    state.chats[key].push({ role: 'bot', text: reply });
+    if (state.view === 'assistant') { render(); $('chatInput')?.focus(); }
+  }
+});
+
+/* ---------- Boot ---------- */
+(async () => {
+  for (const raw of SAMPLES) await addEmail(raw);
+  try { state.user = sessionStorage.getItem('pac-user'); } catch {}
+  const v = location.hash.slice(1); state.view = VIEWS.includes(v) ? v : 'dashboard';
+  render();
+})();
+</script>
+</body>
+</html>
